@@ -3,6 +3,16 @@ import java.util.Scanner;
 public class CaesarDriver {
     public static void main(String[] args){
 
+        // CODE FOR PROBLEM 2
+        /*
+        String string = "IFOMOTCSEWVRSYHETDETLEUOREIICRGHEDRDEGTTIGPDHHCRSEUBAECEIIPERLMSTSNOSINVTAORAEICEUOIAOFTNCLNROLCTOTAYNFETGMSSIEOTMSCRSUTTSNNMOHITIDEMYTISOTRURRILPOAQLGENUODLAEOGCPLENINIFPPASSGEAMOMCIUPTUOERUSMITCRMBEULGSODSOLRBNIETNBMITKTREEPNAMIPFTOTEYATOITNLTREELOBNRDEDNHEENCDEENBNU";
+        for(int i = 0; i < 26; i++){
+            System.out.println();
+            System.out.print("Key = ");
+            System.out.println(i);
+            System.out.println(CaesarShifter.shiftMessage(string, i, false));
+        }*/
+
         boolean quit = false;
         Scanner scnr = new Scanner(System.in);
 
