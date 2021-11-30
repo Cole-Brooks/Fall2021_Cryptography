@@ -75,9 +75,12 @@ def rot_word(byte):
         the shifted list of bytes produced
     """
     ret_byte = []
-    for x in range(3):
-        ret_byte.append(byte[x+1])
-    ret_byte.append(byte[0])
+    try:
+        for x in range(len(byte) -1):
+            ret_byte.append(byte[x+1])
+        ret_byte.append(byte[0])
+    except Exception as e:
+        print("Invalid input to rot_word")
     return ret_byte
 
 def sub_byte(byte):
@@ -127,6 +130,9 @@ def sub_word(words):
         ret_words.append(sub_byte(word))
     return ret_words
 
+def xor(value_a, value_b):
+    return value_a ^ value_b
+
 class R_AES:
     def __init__(self, key_128):
         """
@@ -142,7 +148,10 @@ class R_AES:
 
     def __str__(self):
         if self.key_is_valid:
-            return "Keys = %s" % (self.round_keys)
+            ret_str = "Keys:\n"
+            for x in range(len(self.round_keys)):
+                ret_str += (str(x) + ": " + str(self.round_keys[x]) + "\n")
+            return ret_str
         else:
             return "ATTENTION: YOUR AES OBJECT IS NOT INITIALIZED PROPERLY... Key is invalid. Only 128 bit keys supported."
 
@@ -163,13 +172,33 @@ class R_AES:
             words[x] = [key[4*x], key[4*x+1], key[4*x+2], key[4*x+3]]
 
         # the rest of the words use previous words, rot_word, sub_word, and round_constants
-        for x in range(4,44):
-            buffer = words[x-1]
-            cur_word = words[x-4]
+        for x in range(40):
+            cur_word = x + 4 # offset so that we're not using x + 4 everywhere
+            prev_word = words[cur_word-1]
+            four_words_ago = words[cur_word-4]
 
-            # if x % 4 == 0:
+            if x % 4 == 0:
                 # on multiples of four we need to use functions defined above
+                # print("----------------DEBUG--------------------")
+                # print("Previous Word: " + str(prev_word))
+                # print("four_words_ago: " + str(four_words_ago))
+                # print("rotted: " + str(rotted))
+                # print("----------------END DEBUG----------------")
+                rotted = rot_word(prev_word)
+                sub = sub_word(rotted)
+                round_constant = round_constants[x // 4]
 
+                for x in range(4):
+                    prev_word[x] = xor(sub[x], round_constant)
+
+
+            xored = []
+            for x in range(4):
+                xored.append(xor(four_words_ago[x], prev_word[x]))
+
+            words[cur_word] = [xored[0], xored[1], xored[2], xored[3]]
+                
+        # return words
         return words
 
 ##################################################################
@@ -177,7 +206,7 @@ class R_AES:
 
 # test key generated via random byte generator (random.org/bytes/)
 # note that this implementation will only support 128 bit keys, meaning there 
-# will always be 10 round keys
+# should always be exactly 10 round keys (plus original key)
 test_key = [
     0xe8, 0xeb, 0x12, 0x40, 0x15, 0xcf, 0xcd, 0xe6, 0xb7, 0x95, 0xb5, 0x6e, 0x10, 0xcb, 0x92, 0xa8
 ]
@@ -185,12 +214,13 @@ bad_test_key = [
     0x01, 0xe8, 0xeb, 0x12, 0x40, 0x15, 0xcf, 0xcd, 0xe6, 0xb7, 0x95, 0xb5, 0x6e, 0x10, 0xcb, 0x92, 0xa8
 ]
 
-# aes = R_AES(test_key)
+aes = R_AES(test_key)
 # aes2 = R_AES(bad_test_key)
 
-# print(str(aes))
+print(str(aes))
 # print(str(aes2))
-print(sub_byte(16))
-# print(aes.round_keys)
 
-# run unit tests with !python -m unittest test_aes.py
+# run unit tests with python -m unittest test_aes.py
+
+# print("----------------DEBUG--------------------")
+# print("----------------END DEBUG----------------")

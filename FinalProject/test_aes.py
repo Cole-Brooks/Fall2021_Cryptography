@@ -16,8 +16,13 @@ class unit_tests(unittest.TestCase):
         self.assertEqual(rot_word(rot_word(rot_word(byte))), ['d', 'a', 'b', 'c'])
         self.assertEqual(rot_word(rot_word(rot_word(rot_word(byte)))), byte)
 
+        # test with hex values
         byte = [0x01, 0x02, 0x03, 0x04]
         self.assertEqual(rot_word(byte), [0x02, 0x03, 0x04, 0x01])
+
+        # test with int values
+        byte = [16, 203, 146, 168]
+        self.assertEqual(rot_word(byte), [203, 146, 168, 16])
 
     def test_sub_byte(self):
         """
@@ -45,6 +50,18 @@ class unit_tests(unittest.TestCase):
             expected = [test_box[a], test_box[b], test_box[c], test_box[d]]
 
             self.assertEquals(expected, sub_word(test_words))
+
+    def test_xor(self):
+        """
+        test_xor shouold return the bitwise xor of 2 integer inputs
+        """
+        expected_values = [
+                    0,   240,   0,      255,    10,     83
+        ]
+        input_a = [ 0,   15,    255,    255,    20,     75 ]
+        input_b = [ 0,   255,   255,    0,      30,     24 ]
+        for x in range(len(expected_values)):
+            self.assertEqual(xor(input_a[x], input_b[x]), expected_values[x])
 
     # def test_aes(self):
     #     good_key = [
