@@ -53,7 +53,7 @@ class unit_tests(unittest.TestCase):
 
     def test_xor(self):
         """
-        test_xor shouold return the bitwise xor of 2 integer inputs
+        xor shouold return the bitwise xor of 2 integer inputs
         """
         expected_values = [
                     0,   240,   0,      255,    10,     83
@@ -63,6 +63,41 @@ class unit_tests(unittest.TestCase):
         for x in range(len(expected_values)):
             self.assertEqual(xor(input_a[x], input_b[x]), expected_values[x])
 
+    def test_convert_to_4_by_4(self):
+        input_values = '000102030405060708090a0b0c0d0e0f'
+        expected_output = [
+            [0, 4, 8,   12],
+            [1, 5, 9,   13],
+            [2, 6, 10,  14],
+            [3, 7, 11,  15]
+        ]
+        self.assertEquals(convert_to_4_by_4(input_values), expected_output)
+
+    def test_convert_string_to_array_one_block(self):
+        """
+        convert_string_to_array should return the same value as convert_to_4_by_4 
+        if the input is a single block (16 bytes)
+        """
+        input_values = '000102030405060708090a0b0c0d0e0f'
+        expected_output = [
+            [0, 4, 8,   12],
+            [1, 5, 9,   13],
+            [2, 6, 10,  14],
+            [3, 7, 11,  15]
+        ]
+        self.assertEquals(convert_string_to_array(input_values), expected_output)
+
+    def test_add_round_key(self):
+        """
+        add_round_key should return the xored matrix resultant of its two inputs
+        test case is found in textbook (page 189)
+        """
+        input_state = [[71,64,163,76],[55,212,112,159],[148,228,58,66],[237,165,166,188]]
+        input_round_key = [[172, 25, 40, 87],[119, 250, 209, 92],[102, 220, 41, 0],[243, 33, 65, 106]]
+        expected = [[235,89,139,27],[64,46,161,195],[242,56,19,66],[30,132,231,214]]
+
+        self.assertEqual(add_round_key(input_state, input_round_key), expected)
+        
     # def test_aes(self):
     #     good_key = [
     #         0xe8, 0xeb, 0x12, 0x40, 0x15, 0xcf, 0xcd, 0xe6, 0xb7, 0x95, 0xb5, 0x6e, 0x10, 0xcb, 0x92, 0xa8
