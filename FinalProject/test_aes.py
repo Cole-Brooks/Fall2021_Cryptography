@@ -23,6 +23,36 @@ class unit_tests(unittest.TestCase):
         # test with int values
         byte = [16, 203, 146, 168]
         self.assertEqual(rot_word(byte), [203, 146, 168, 16])
+    def test_multi_rotate(self):
+        """
+        multirotate should have the same functionality as rot_word, but 
+        with the added parameter of how many times to rotate the word
+        """
+        byte = ['a', 'b', 'c', 'd']
+        self.assertEqual(multi_rotate(byte,1), ['b', 'c', 'd', 'a'])
+        self.assertEqual(multi_rotate(byte,2), ['c', 'd', 'a', 'b'])
+        self.assertEqual(multi_rotate(byte,3), ['d', 'a', 'b', 'c'])
+        self.assertEqual(multi_rotate(byte,4), byte)
+
+        # test with int values
+        byte = [16, 203, 146, 168]
+        self.assertEqual(multi_rotate(byte,1), [203, 146, 168, 16])
+        self.assertEqual(multi_rotate(byte,2), [146, 168, 16, 203])
+        self.assertEqual(multi_rotate(byte,3), [168, 16, 203, 146])
+        self.assertEqual(multi_rotate(byte,4), byte)
+
+    def test_matrix_shift_rows(self):
+        """
+        matrix shift rows should shift the rows of a matrix in accordance with aes
+        row 1 should not be shifted
+        row 2 should be shifted by 1
+        row 3 should be shifted by 2
+        row 4 should be shifted by 3
+        test case found on page 195 of textbook
+        """
+        test_mat = [[171,139,137,53],[216,64,127,241],[24,63,240,252],[228,78,47,196]]
+        expected_mat = [[171,139,137,53],[64,127,241,216],[240,252,24,63],[196,228,78,47]]
+        self.assertEqual(matrix_shift_rows(test_mat), expected_mat)
 
     def test_sub_byte(self):
         """
@@ -33,6 +63,18 @@ class unit_tests(unittest.TestCase):
         test_box = sum(substitution_box, [])
         for x in range(255):
             self.assertEqual(test_box[x], sub_byte(x))
+
+    def test_matrix_sub_bytes(self):
+        """
+        matrix_sub_bytes should return a matrix with substituted bytes from the substitution box.
+        """
+        test_mat = [[14,206,242,217],[45,114,107,43],[52,37,23,85],[174,182,78,136]]
+        expected = [[171,139,137,53],[216,64,127,241],[24,63,240,252],[228,78,47,196]]
+
+        """
+        NOTE: In testing this function I believe that I found an error on page 195 of the text book. Admitedly I have an old version
+        """
+        self.assertEqual(matrix_sub_bytes(test_mat), expected)
 
     def test_sub_words(self):
         """
@@ -97,7 +139,7 @@ class unit_tests(unittest.TestCase):
         expected = [[235,89,139,27],[64,46,161,195],[242,56,19,66],[30,132,231,214]]
 
         self.assertEqual(add_round_key(input_state, input_round_key), expected)
-        
+
     # def test_aes(self):
     #     good_key = [
     #         0xe8, 0xeb, 0x12, 0x40, 0x15, 0xcf, 0xcd, 0xe6, 0xb7, 0x95, 0xb5, 0x6e, 0x10, 0xcb, 0x92, 0xa8

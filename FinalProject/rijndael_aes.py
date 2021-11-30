@@ -12,6 +12,9 @@ ___copyright__ = "Copyright 2021, github.com/Cole-Brooks"
 __license__ = "Creative Commons - use it for whatever I don't care"
 
 # Substitution box obtained from https://en.wikipedia.org/wiki/Rijndael_S-box
+from unittest import result
+
+
 substitution_box = [
         [ 0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76 ],
 		[ 0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0 ],
@@ -260,10 +263,33 @@ def mix_columns(matrix):
     for x in range(4):
         col = [matrix[y][x] for y in range(4)]
         col = mix_column(col)
-        print("x: " + str(x) + ": Col: " + str(col))
         new_mat[x] = col
     ret_mat = transpose_matrix(new_mat)
     return ret_mat
+
+def multi_rotate(l, n):
+    ret_val = l
+    for x in range(n):
+        ret_val = rot_word(ret_val)
+    return ret_val
+
+def matrix_shift_rows(mat):
+    ret_mat = []
+    for x in range(4):
+        ret_mat.append(multi_rotate(mat[x], x))
+    return ret_mat
+
+def matrix_sub_bytes(mat):
+    """
+    matrix_sub_bytes
+
+    substitutes all the bytes in a matrix using the substitution box
+    """
+    resultant = [[None for x in range(4)] for y in range(4)]
+    for y in range(4):
+        for x in range(4):
+            resultant[y][x] = sub_byte(mat[y][x])
+    return resultant      
 
 def add_round_key(state, round_key):
     """
@@ -286,12 +312,11 @@ def add_round_key(state, round_key):
     resultant = [[None for x in range(4)] for y in range(4)]
 
     for x in range(4):
-        print("x: " + str(x))
         for y in range(4):
-            print("y: " + str(y))
             resultant[y][x] = state[y][x] ^ round_key[y][x]
 
     return resultant
+
 class R_AES:
     def __init__(self, key_128):
         """
@@ -361,7 +386,7 @@ class R_AES:
 
         return words
 
-    def encrypt_one_block(plaintext):
+    def encrypt_one_block(self,plaintext):
         """
         encrypt_one_block
 
@@ -377,8 +402,26 @@ class R_AES:
         string
             the ciphertext produced via aes 128
         """
+        state = convert_string_to_array(plaintext)
 
-        return
+        # the first round is just adding a round key, according to page 195
+        # note the first round key is just the given key
+        state = add_round_key(state, self.round_keys[0])
+
+        # for rounds 1 - 9 we do the full process
+        # subbytes, shiftrows, mixcolumns
+        for x in range(1, 10):
+            state = matrix_sub_bytes(state)
+            state = matrix_shift_rows(state)
+            state = mix_columns(state)
+            state = add_round_key(state, self.round_keys[x])
+
+        # for the last round we don't mix the colums but we do everything else
+        state = matrix_sub_bytes(state)
+        state = matrix_shift_rows(state)
+        state = add_round_key(state, self.round_keys[10])
+
+        return state
 ##################################################################
 # Driver
 
@@ -391,6 +434,7 @@ test_key = [
 ]
 
 aes = R_AES(test_key)
+print(aes.encrypt_one_block('0189fe7623abdc5445cdba3267ef9810'))
 
 # print(str(aes))
 
