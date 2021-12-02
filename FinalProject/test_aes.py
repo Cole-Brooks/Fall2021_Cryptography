@@ -1,5 +1,6 @@
 from rijndael_aes import *
 import unittest
+import secrets
 
 class unit_tests(unittest.TestCase):
     """
@@ -54,6 +55,34 @@ class unit_tests(unittest.TestCase):
         expected_mat = [[171,139,137,53],[64,127,241,216],[240,252,24,63],[196,228,78,47]]
         self.assertEqual(matrix_shift_rows(test_mat), expected_mat)
 
+    def test_i_matrix_shift_rows(self):
+        """
+        i_matrix_shift_rows should be the functional inverse of
+        matrix_shift_rows
+        """
+        test_mat = [[171,139,137,53],[216,64,127,241],[24,63,240,252],[228,78,47,196]]
+        expected_mat = [[171,139,137,53],[64,127,241,216],[240,252,24,63],[196,228,78,47]]
+        self.assertEqual(i_matrix_shift_rows(expected_mat), test_mat)
+        self.assertEqual(test_mat, i_matrix_shift_rows(matrix_shift_rows(test_mat)))
+
+    def test_convert_from_4_by_4(self):
+        """
+        convert_from_4_by_4 should be the functional inverse of convert_to_4_by_4
+        """
+        test_in = [
+            [0xa8, 0x15, 0xb7, 0x10],
+            [0xeb, 0xcf, 0x95, 0xcb],
+            [0x12, 0xcd, 0xb5, 0x92],
+            [0x40, 0xe6, 0x6e, 0xa8]
+        ]
+        
+        expected = 'a8eb124015cfcde6b795b56e10cb92a8'
+        self.assertEqual(convert_from_4_by_4(test_in), expected)
+
+        test_in = [[0 for x in range(4)] for y in range(4)]
+        expected = '00000000000000000000000000000000'
+        self.assertEqual(convert_from_4_by_4(test_in), expected)
+
     def test_sub_byte(self):
         """
         sub_byte should return the substituted byte from the substitution table.
@@ -63,6 +92,13 @@ class unit_tests(unittest.TestCase):
         test_box = sum(substitution_box, [])
         for x in range(255):
             self.assertEqual(test_box[x], sub_byte(x))
+
+    def test_i_sub_byte(self):
+        """
+        i_sub_byte should be a direct functional inverse of sub_byte
+        """
+        for x in range(255):
+            self.assertEqual(x, i_sub_byte(sub_byte(x)))
 
     def test_matrix_sub_bytes(self):
         """
@@ -75,6 +111,15 @@ class unit_tests(unittest.TestCase):
         NOTE: In testing this function I believe that I found an error on page 195 of the text book. Admitedly I have an old version
         """
         self.assertEqual(matrix_sub_bytes(test_mat), expected)
+
+    def test_i_matrix_sub_bytes(self):
+        """
+        i_matrix_sub_bytes should be the functional inverse of matrix sub bytes
+        """
+        test_mat = [[14,206,242,217],[45,114,107,43],[52,37,23,85],[174,182,78,136]]
+        expected = [[171,139,137,53],[216,64,127,241],[24,63,240,252],[228,78,47,196]]
+
+        self.assertEqual(i_matrix_sub_bytes(matrix_sub_bytes(test_mat)), test_mat)
 
     def test_sub_words(self):
         """
@@ -91,7 +136,23 @@ class unit_tests(unittest.TestCase):
             test_words = [a, b, c, d]
             expected = [test_box[a], test_box[b], test_box[c], test_box[d]]
 
-            self.assertEquals(expected, sub_word(test_words))
+            self.assertEqual(expected, sub_word(test_words))
+
+    def test_i_sub_words(self):
+        """
+        sub_words should return the substituted values for 2 words (2x2 byte array)
+
+        Tests every value from 0-255
+        """
+        test_box = sum(substitution_box, [])
+        for a in range(255):
+            b = (a + 1) % 255
+            c = (a + 2) % 255
+            d = (a + 3) % 255
+
+            test_words = [a, b, c, d]
+
+            self.assertEqual(test_words, i_sub_word(sub_word(test_words)))
 
     def test_xor(self):
         """
@@ -113,7 +174,7 @@ class unit_tests(unittest.TestCase):
             [2, 6, 10,  14],
             [3, 7, 11,  15]
         ]
-        self.assertEquals(convert_to_4_by_4(input_values), expected_output)
+        self.assertEqual(convert_to_4_by_4(input_values), expected_output)
 
     def test_convert_string_to_array_one_block(self):
         """
@@ -127,7 +188,7 @@ class unit_tests(unittest.TestCase):
             [2, 6, 10,  14],
             [3, 7, 11,  15]
         ]
-        self.assertEquals(convert_string_to_array(input_values), expected_output)
+        self.assertEqual(convert_string_to_array(input_values), expected_output)
 
     def test_add_round_key(self):
         """
@@ -140,14 +201,67 @@ class unit_tests(unittest.TestCase):
 
         self.assertEqual(add_round_key(input_state, input_round_key), expected)
 
-    # def test_aes(self):
-    #     good_key = [
-    #         0xe8, 0xeb, 0x12, 0x40, 0x15, 0xcf, 0xcd, 0xe6, 0xb7, 0x95, 0xb5, 0x6e, 0x10, 0xcb, 0x92, 0xa8
-    #     ]
-    #     bad_key = [
-    #         0x01, 0xe8, 0xeb, 0x12, 0x40, 0x15, 0xcf, 0xcd, 0xe6, 0xb7, 0x95, 0xb5, 0x6e, 0x10, 0xcb, 0x92, 0xa8
-    #     ]
-    #     aes = R_AES()
+    def test_i_mix_columns(self):
+        """
+        i_mix_columns should be the functional inverse of mix columns.
+
+        to test, we'll mix a matrix and then i_mix and test that we come up
+        with the original matrix.
+        """
+        in_mat = [[71,64,163,76],[55,212,112,159],[148,228,58,66],[237,165,166,188]]
+        mixed = mix_columns(in_mat)
+        self.assertEqual(in_mat, i_mix_columns(mixed))
+
+    def test_aes_encrypt_decrypt_one_block(self):
+        good_key = [
+            0xe9, 0xeb, 0x12, 0x40, 0x15, 0xcf, 0xcd, 0xe6, 0xb7, 0x95, 0xb5, 0x6e, 0x10, 0xcb, 0x92, 0xa8
+        ]
+        aes = R_AES(good_key)
+
+        # example plaintexts for class
+        plaintexts = [
+            'd49e138b1736fc8de025de06556b56f6',
+            '6bfdf56708c7d63383220fdbe7adb9cf',
+            '4730c97fd85ac7f1761acb5a81bfd47c',
+            'e8016097ca17cabbbae665b9d648fd86',
+            '74c02f0ddb19cdc25b93bff0c9908748',
+            'f6e6a1a859887980f9832b16f4ee786f',
+            '74773c31743b1119b904dcb5378e62c2',
+            'd9535a208d0dc7f06949e217a512c05d',
+            'c47abc07757ac4d4ad9fd5a54ffe3a40',
+            'b14e07e7bf622e9a25b4c1819e040bac',
+            '69932cd41458f547893cd014af1ed951'
+        ]
+        for pt in plaintexts:
+            self.assertEqual(pt, aes.decrypt_one_block(aes.encrypt_one_block(pt)))
+
+        # actual test - many more plaintexts to attempt to find an error
+        plaintexts = []
+        short_test = 1000
+        ten_sec_test = short_test * 10
+        hundred_sec_test = ten_sec_test * 10
+        thousand_sec_test = hundred_sec_test * 10
+        hour_test = int(thousand_sec_test * 3.6)
+
+        for x in range(short_test):
+            plaintexts.append(secrets.token_hex(16))
+        
+        for pt in plaintexts:
+            self.assertEqual(pt, aes.decrypt_one_block(aes.encrypt_one_block(pt)))
+
+    def test_AES_encrypt_decrypt_with_diff_keys(self):
+        test_pt = '69932cd41458f547893cd014af1ed951'
+        base_key = [0]*16
+        aes = R_AES(base_key)
+
+        for x in range(1000):
+            # make a new random key
+            key = []
+            for x in range(16):
+                key.append(int(secrets.token_hex(1), 16))
+
+            aes = R_AES(key)
+            self.assertEqual(test_pt, aes.decrypt_one_block(aes.encrypt_one_block(test_pt)))
 
 if __name__ == '__main__':
     unittest.main()

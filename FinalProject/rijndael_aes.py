@@ -124,7 +124,35 @@ def convert_to_4_by_4(hex_val):
 
     return ret_list
         
+def convert_from_4_by_4(mat):
+    """
+    convert_from_4_by_4
 
+    the functional inverse of convert_to_4_by_4
+
+    Parameters
+    ---------------
+    list of lists
+        a 4x4 list of lists filled with hex_val
+        ex: [ 
+            [a8, 15, b7, 10]
+            [eb, cf, 95, cb]
+            [12, cd, b5, 92]
+            [40, e6, 6e, a8]
+        ]
+
+    Returns
+    ---------------
+    hex_val : string
+        a 16 byte hex value to convert to a 4x4 block
+        ex: 'a8eb124015cfcde6b795b56e10cb92a8'
+    """
+    ret_str = ""
+    for x in range(4):
+        for y in range(4):
+            ret_str = ret_str + '{:02x}'.format(mat[y][x])
+            
+    return ret_str
 
 def convert_string_to_array(string):
     """
@@ -142,17 +170,19 @@ def convert_string_to_array(string):
     list 
         a list of lists filled with the input strings pieces
     """
-    if (len(string) % 2 != 0) or not is_power_of_two(len(string)):
-        # TODO we'll need to do some padding
-        print("padding needed")
-    else: 
-        # we know that the length is some power of two. No padding necessary
-        print("no padding needed")
+    # if (len(string) % 2 != 0) or not is_power_of_two(len(string)):
+    #     # TODO we'll need to do some padding
+    #     print("padding needed")
+    # else: 
+    #     # we know that the length is some power of two. No padding necessary
+    #     print("no padding needed")
 
     if len(string) == 32:
         # easy base case - 1 block
         return convert_to_4_by_4(string)
 
+def convert_array_to_string(mat):
+    return convert_from_4_by_4(mat)
 
 def rot_word(byte):
     """
@@ -202,6 +232,30 @@ def sub_byte(byte):
 
     return substitution_box[y][x]
 
+def i_sub_byte(byte):
+    """
+    i_sub_byte
+
+    A functional inverse of sub_byte
+    performs one byte substitution using the substitution_box_inverse
+
+    Parameters
+    ---------------
+    byte : int
+        an integer which you would like to convert (0-255)
+    
+    Returns
+    ---------------
+    int
+        the new integer 0-255 obtained from the substitution
+    """
+    hex_as_2_char = '{:02x}'.format(byte)
+
+    y = int(hex_as_2_char[0], 16)   # the first digit of the byte in int
+    x = int(hex_as_2_char[1],16)    # the second digit of the byte in int
+
+    return substitution_box_inverse[y][x]
+
 def sub_word(words):
     """
     sub_word
@@ -226,7 +280,21 @@ def sub_word(words):
         ret_words.append(sub_byte(word))
     return ret_words
 
+def i_sub_word(words):
+    """
+    i_sub_word
+
+    functional inverse of sub_word
+    """
+    ret_words = []
+    for word in words:
+        # convert each byte into a 2 digit hex value and sub_byte
+        ret_words.append(i_sub_byte(word))
+    return ret_words
+
 def xor(value_a, value_b):
+    # print("Value A: " + str(value_a))
+    # print("Value B: " + str(value_b))
     return value_a ^ value_b
 
 """
@@ -267,6 +335,17 @@ def mix_columns(matrix):
     ret_mat = transpose_matrix(new_mat)
     return ret_mat
 
+def i_mix_columns(matrix):
+    """
+    i_mix_columns
+
+    functional inverse to mix_columns
+    """
+    unmixed = matrix
+    for x in range(3):
+        unmixed = mix_columns(unmixed)
+    return unmixed
+
 def multi_rotate(l, n):
     ret_val = l
     for x in range(n):
@@ -277,6 +356,21 @@ def matrix_shift_rows(mat):
     ret_mat = []
     for x in range(4):
         ret_mat.append(multi_rotate(mat[x], x))
+    return ret_mat
+
+def i_matrix_shift_rows(mat):
+    """
+    i_matrix_shift_rows
+
+    functional inverse of matrix_shift_rows
+
+
+    """
+    ret_mat = []
+    ret_mat.append(mat[0])
+    ret_mat.append(multi_rotate(mat[1], 3))
+    ret_mat.append(multi_rotate(mat[2], 2))
+    ret_mat.append(multi_rotate(mat[3], 1))
     return ret_mat
 
 def matrix_sub_bytes(mat):
@@ -290,6 +384,18 @@ def matrix_sub_bytes(mat):
         for x in range(4):
             resultant[y][x] = sub_byte(mat[y][x])
     return resultant      
+
+def i_matrix_sub_bytes(mat):
+    """
+    i_matrix_sub_bytes
+
+    functional inverse to matrix_sub_bytes
+    """
+    resultant = [[None for x in range(4)] for y in range(4)]
+    for y in range(4):
+        for x in range(4):
+            resultant[y][x] = i_sub_byte(mat[y][x])
+    return resultant  
 
 def add_round_key(state, round_key):
     """
@@ -403,7 +509,8 @@ class R_AES:
             the ciphertext produced via aes 128
         """
         state = convert_string_to_array(plaintext)
-
+        
+        # print("State after converting to array: " + str(len(test)))        
         # the first round is just adding a round key, according to page 195
         # note the first round key is just the given key
         state = add_round_key(state, self.round_keys[0])
@@ -421,7 +528,29 @@ class R_AES:
         state = matrix_shift_rows(state)
         state = add_round_key(state, self.round_keys[10])
 
+        state = convert_array_to_string(state)
         return state
+
+    def decrypt_one_block(self, ciphertext):
+        state = convert_string_to_array(ciphertext)
+        # start by adding the last round key
+        state = add_round_key(state, self.round_keys[10])
+
+        # For rounds 1 - 9 we do the full inverse process
+        for x in range(1,10):
+            state = i_matrix_shift_rows(state)
+            state = i_matrix_sub_bytes(state)
+            state = add_round_key(state, self.round_keys[10-x])
+            state = i_mix_columns(state)
+
+        # For round 10 we don't mix the columns
+        state = i_matrix_shift_rows(state)
+        state = i_matrix_sub_bytes(state)
+        state = add_round_key(state, self.round_keys[0])
+
+        state = convert_array_to_string(state)
+        return state
+
 ##################################################################
 # Driver
 
@@ -432,11 +561,6 @@ class R_AES:
 test_key = [
     0x0f, 0x15, 0x71, 0xc9, 0x47, 0xd9, 0xe8, 0x59, 0x0c, 0xb7, 0xad, 0xd6, 0xaf, 0x7f, 0x67, 0x9b
 ]
-
-aes = R_AES(test_key)
-print(aes.encrypt_one_block('0189fe7623abdc5445cdba3267ef9810'))
-
-# print(str(aes))
 
 # run unit tests with python -m unittest test_aes.py
 
