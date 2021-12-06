@@ -4,6 +4,9 @@
     This program will be able to take an input from the user via command line, and provide
     the ciphertext produced using AES. 
 
+    It will also be able to convert from ciphertext to plaintext. Again using AES
+
+    Note that this program only currently supports 128 bit keys.
 """
 ##################################################
 # Definitions
