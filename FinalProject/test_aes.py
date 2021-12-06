@@ -1,6 +1,7 @@
 from rijndael_aes import *
 import unittest
 import secrets
+from essential_generators import DocumentGenerator
 
 class unit_tests(unittest.TestCase):
     """
@@ -262,6 +263,25 @@ class unit_tests(unittest.TestCase):
 
             aes = R_AES(key)
             self.assertEqual(test_pt, aes.decrypt_one_block(aes.encrypt_one_block(test_pt)))
+
+    def test_long_encrypt_decrypt(self):
+        """
+        encrypting and decrypting should work with any sentence,
+
+        note that we definitely cannot test every sentence, but if we can generate 10000 random sentences
+        and the program consistently functions for each of them, I am going to assume good functionality
+        """
+        gen = DocumentGenerator()
+        test_key_1 = [
+            0xe9, 0xeb, 0x12, 0x40, 0x15, 0xcf, 0xcd, 0xe6, 0xb7, 0x95, 0xb5, 0x6e, 0x10, 0xcb, 0x92, 0xa8
+        ]
+        aes = R_AES(test_key_1)
+
+        for x in range(10000):
+            test_str = gen.sentence()
+            test_encoded = test_str.encode('utf-8').hex()
+            self.assertEqual(test_str, aes.decrypt(aes.encrypt(test_encoded)))
+
 
 if __name__ == '__main__':
     unittest.main()

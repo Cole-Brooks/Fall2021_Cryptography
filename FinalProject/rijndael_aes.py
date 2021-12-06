@@ -124,16 +124,11 @@ def convert_string_to_array(string):
     list 
         a list of lists filled with the input strings pieces
     """
-    # if (len(string) % 2 != 0) or not is_power_of_two(len(string)):
-    #     # TODO we'll need to do some padding
-    #     print("padding needed")
-    # else: 
-    #     # we know that the length is some power of two. No padding necessary
-    #     print("no padding needed")
-
     if len(string) == 32:
-        # easy base case - 1 block
         return convert_to_4_by_4(string)
+    else:
+        # if string is the wrong length this function isn't going to handle it
+        raise ValueError
 
 def convert_array_to_string(mat):
     return convert_from_4_by_4(mat)
@@ -505,6 +500,28 @@ class R_AES:
         state = convert_array_to_string(state)
         return state
 
+    def encrypt(self, plaintext):
+        ct = ""
+        plaintext = plaintext + const_padding_string # always add padding so we can get rid of it at the end
+
+        # handle padding
+        while len(plaintext) % 32 != 0:
+            plaintext = plaintext + "0"
+            
+        plaintext_block_list = [plaintext[i:i+32] for i in range(0, len(plaintext), 32)]
+        for block in plaintext_block_list:
+            ct = ct + self.encrypt_one_block(block)
+        
+        return ct
+
+    def decrypt(self, ciphertext):
+        pt = ""
+        ciphertext_block_list = [ciphertext[i:i+32] for i in range(0, len(ciphertext), 32)]
+
+        for block in ciphertext_block_list:
+            pt = pt + self.decrypt_one_block(block)
+        ba = bytearray.fromhex(pt.split(const_padding_string,1)[0])
+        return(ba.decode())
 ##################################################################
 # Driver
 
